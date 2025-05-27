@@ -34,7 +34,6 @@ if uploaded_files:
                 vorname = row[4] if 4 in row else None
                 datum = pd.to_datetime(row[14], errors='coerce') if 14 in row else None
 
-                # NUR ab 2025
                 if (
                     "krank" in kommentar.lower()
                     and pd.notnull(name)
@@ -43,7 +42,7 @@ if uploaded_files:
                     and datum.year >= 2025
                 ):
                     kw = datum.isocalendar().week
-                    wochentag = wochentage[datum.weekday()]  # 0=Montag
+                    wochentag = wochentage[datum.weekday()]
                     datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
                     monat_index = datum.month
                     jahr = datum.year
@@ -113,35 +112,68 @@ if uploaded_files:
                     col_letter = get_column_letter(col_cells[0].column)
                     sheet.column_dimensions[col_letter].width = int(max_len * 1.2) + 2
 
-            # Übersicht-Tab erzeugen
+            # Übersicht-Tab erzeugen (Layout-Upgrade)
             df_uebersicht = (
                 df_gesamt.groupby(["Nachname", "Vorname"])
                 .size()
                 .reset_index(name="Anzahl Krank-Meldungen")
                 .sort_values(by="Anzahl Krank-Meldungen", ascending=False)
             )
-            df_uebersicht.to_excel(writer, index=False, sheet_name="Übersicht")
 
+            # Zeile für die Überschrift, dann Leerzeile, dann Spaltenüberschriften und Tabelle
+            ueberschrift = [["Krank-Meldungen Übersicht ab 2025"], [""], ["Nachname", "Vorname", "Anzahl Krank-Meldungen"]]
+            daten = df_uebersicht.values.tolist()
+            df_uebersicht_final = pd.DataFrame(ueberschrift + daten, columns=["A", "B", "C"])
+
+            df_uebersicht_final.to_excel(writer, index=False, header=False, sheet_name="Übersicht")
             sheet_ue = writer.sheets["Übersicht"]
 
-            # Formatierung für Übersicht
+            # Formatierung Übersichtstab
             thin = Border(left=Side(style='thin'), right=Side(style='thin'),
                           top=Side(style='thin'), bottom=Side(style='thin'))
             header_fill = PatternFill("solid", fgColor="95b3d7")
+            zebra_1 = PatternFill("solid", fgColor="f7f7f7")
+            zebra_2 = PatternFill("solid", fgColor="ddeeff")
+
             for row_idx, row in enumerate(sheet_ue.iter_rows(), start=1):
-                for cell in row:
-                    cell.font = Font(name="Calibri", size=11)
-                    cell.alignment = Alignment(horizontal="left", vertical="center")
-                    cell.border = thin
+                for col_idx, cell in enumerate(row, start=1):
+                    # Überschrift
                     if row_idx == 1:
+                        cell.font = Font(size=16, bold=True)
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        cell.border = None
+                        # Merge die erste Zeile über alle 3 Spalten
+                        if col_idx == 1:
+                            sheet_ue.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
+                    # Leerzeile
+                    elif row_idx == 2:
+                        cell.border = None
+                    # Kopfzeile der Tabelle
+                    elif row_idx == 3:
                         cell.font = Font(bold=True)
                         cell.fill = header_fill
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        cell.border = thin
+                    # Datenzeilen
+                    elif row_idx > 3:
+                        if row_idx % 2 == 0:
+                            cell.fill = zebra_1
+                        else:
+                            cell.fill = zebra_2
+                        # Anzahl-Spalte rechtsbündig & fett
+                        if col_idx == 3:
+                            cell.font = Font(bold=True)
+                            cell.alignment = Alignment(horizontal="right", vertical="center")
+                        else:
+                            cell.alignment = Alignment(horizontal="center", vertical="center")
+                        cell.border = thin
 
-            # Spaltenbreite anpassen
-            for col_cells in sheet_ue.columns:
-                max_len = max((len(str(cell.value)) if cell.value else 0) for cell in col_cells)
-                col_letter = get_column_letter(col_cells[0].column)
-                sheet_ue.column_dimensions[col_letter].width = int(max_len * 1.2) + 2
+            # Spaltenbreite großzügig setzen
+            for col in range(1, 4):
+                max_len = 18
+                if col == 3:
+                    max_len = 24
+                sheet_ue.column_dimensions[get_column_letter(col)].width = max_len
 
         st.download_button("Excel-Datei herunterladen", output.getvalue(), file_name="Krank_Monatsauswertung.xlsx")
 
