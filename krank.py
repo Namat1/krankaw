@@ -128,7 +128,6 @@ if uploaded_files:
             df_uebersicht_final.to_excel(writer, index=False, header=False, sheet_name="Übersicht")
             sheet_ue = writer.sheets["Übersicht"]
 
-            # Formatierung Übersichtstab
             thin = Border(left=Side(style='thin'), right=Side(style='thin'),
                           top=Side(style='thin'), bottom=Side(style='thin'))
             header_fill = PatternFill("solid", fgColor="95b3d7")
@@ -141,13 +140,12 @@ if uploaded_files:
                     if row_idx == 1:
                         cell.font = Font(size=16, bold=True)
                         cell.alignment = Alignment(horizontal="center", vertical="center")
-                        cell.border = None
-                        # Merge die erste Zeile über alle 3 Spalten
+                        # Kein cell.border = None!
                         if col_idx == 1:
                             sheet_ue.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
                     # Leerzeile
                     elif row_idx == 2:
-                        cell.border = None
+                        continue  # Keine Formatierung/Border für Leerzeile
                     # Kopfzeile der Tabelle
                     elif row_idx == 3:
                         cell.font = Font(bold=True)
