@@ -66,9 +66,14 @@ if uploaded_files:
             # Monatsblätter
             for monat_key in sorted(df_gesamt["Monat"].unique()):
                 df_monat = df_gesamt[df_gesamt["Monat"] == monat_key]
+                # Anzahl Kranktage pro Name in diesem Monat berechnen
+                kranktage_pro_name = (
+                    df_monat.groupby(["Nachname", "Vorname"]).size().to_dict()
+                )
                 zeilen = []
                 for (nach, vor), gruppe in df_monat.groupby(["Nachname", "Vorname"]):
-                    zeilen.append([f"{vor} {nach}", ""])
+                    kranktage = kranktage_pro_name.get((nach, vor), 0)
+                    zeilen.append([f"{vor} {nach} ({kranktage})", ""])
                     zeilen.append(["Datum", "Kommentar"])
                     for _, r in gruppe.iterrows():
                         zeilen.append([r["DatumKW"], r["Kommentar"]])
