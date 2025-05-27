@@ -64,6 +64,7 @@ if uploaded_files:
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            # Monatsblätter
             for monat_key in sorted(df_gesamt["Monat"].unique()):
                 df_monat = df_gesamt[df_gesamt["Monat"] == monat_key]
                 zeilen = []
@@ -111,6 +112,36 @@ if uploaded_files:
                     max_len = max((len(str(cell.value)) if cell.value else 0) for cell in col_cells)
                     col_letter = get_column_letter(col_cells[0].column)
                     sheet.column_dimensions[col_letter].width = int(max_len * 1.2) + 2
+
+            # Übersicht-Tab erzeugen
+            df_uebersicht = (
+                df_gesamt.groupby(["Nachname", "Vorname"])
+                .size()
+                .reset_index(name="Anzahl Krank-Meldungen")
+                .sort_values(by="Anzahl Krank-Meldungen", ascending=False)
+            )
+            df_uebersicht.to_excel(writer, index=False, sheet_name="Übersicht")
+
+            sheet_ue = writer.sheets["Übersicht"]
+
+            # Formatierung für Übersicht
+            thin = Border(left=Side(style='thin'), right=Side(style='thin'),
+                          top=Side(style='thin'), bottom=Side(style='thin'))
+            header_fill = PatternFill("solid", fgColor="95b3d7")
+            for row_idx, row in enumerate(sheet_ue.iter_rows(), start=1):
+                for cell in row:
+                    cell.font = Font(name="Calibri", size=11)
+                    cell.alignment = Alignment(horizontal="left", vertical="center")
+                    cell.border = thin
+                    if row_idx == 1:
+                        cell.font = Font(bold=True)
+                        cell.fill = header_fill
+
+            # Spaltenbreite anpassen
+            for col_cells in sheet_ue.columns:
+                max_len = max((len(str(cell.value)) if cell.value else 0) for cell in col_cells)
+                col_letter = get_column_letter(col_cells[0].column)
+                sheet_ue.column_dimensions[col_letter].width = int(max_len * 1.2) + 2
 
         st.download_button("Excel-Datei herunterladen", output.getvalue(), file_name="Krank_Monatsauswertung.xlsx")
 
