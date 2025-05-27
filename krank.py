@@ -4,7 +4,7 @@ import io
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-st.title("Krank-Meldungen Monatsübersicht")
+st.title("Krank-Meldungen Monatsübersicht (ab 2025)")
 
 uploaded_files = st.file_uploader("Excel-Dateien hochladen", type=["xlsx"], accept_multiple_files=True)
 
@@ -13,6 +13,11 @@ german_months = {
     5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
     9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
 }
+
+wochentage = [
+    "Montag", "Dienstag", "Mittwoch", "Donnerstag",
+    "Freitag", "Samstag", "Sonntag"
+]
 
 if uploaded_files:
     eintraege = []
@@ -29,14 +34,17 @@ if uploaded_files:
                 vorname = row[4] if 4 in row else None
                 datum = pd.to_datetime(row[14], errors='coerce') if 14 in row else None
 
+                # NUR ab 2025
                 if (
                     "krank" in kommentar.lower()
                     and pd.notnull(name)
                     and pd.notnull(vorname)
                     and pd.notnull(datum)
+                    and datum.year >= 2025
                 ):
                     kw = datum.isocalendar().week
-                    datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw})"
+                    wochentag = wochentage[datum.weekday()]  # 0=Montag
+                    datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
                     monat_index = datum.month
                     jahr = datum.year
                     monat_name = german_months[monat_index]
@@ -107,4 +115,4 @@ if uploaded_files:
         st.download_button("Excel-Datei herunterladen", output.getvalue(), file_name="Krank_Monatsauswertung.xlsx")
 
     else:
-        st.warning("Keine gültigen Krank-Meldungen gefunden.")
+        st.warning("Keine gültigen Krank-Meldungen ab 2025 gefunden.")
