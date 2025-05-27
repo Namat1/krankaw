@@ -73,7 +73,7 @@ if uploaded_files:
                 zeilen = []
                 for (nach, vor), gruppe in df_monat.groupby(["Nachname", "Vorname"]):
                     kranktage = kranktage_pro_name.get((nach, vor), 0)
-                    zeilen.append([f"{vor} {nach} ({kranktage})", ""])
+                    zeilen.append([f"{vor} {nach} ({kranktage} Tage)", ""])
                     zeilen.append(["Datum", "Kommentar"])
                     for _, r in gruppe.iterrows():
                         zeilen.append([r["DatumKW"], r["Kommentar"]])
