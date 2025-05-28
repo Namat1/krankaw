@@ -32,42 +32,51 @@ if uploaded_files:
                 kommentar = str(row[15]) if 15 in row and pd.notnull(row[15]) else ""
                 datum = pd.to_datetime(row[14], errors='coerce') if 14 in row else None
 
-                # Nachnamen und Vornamen einsammeln
-                nachnamen = []
-                vornamen = []
+                # Paar 1: D/E (3/4)
+                if 3 in row and pd.notnull(row[3]) and 4 in row and pd.notnull(row[4]):
+                    nname = str(row[3])
+                    vname = str(row[4])
+                    if (
+                        "krank" in kommentar.lower()
+                        and datum is not None
+                        and datum.year >= 2025
+                    ):
+                        kw = datum.isocalendar().week
+                        wochentag = wochentage[datum.weekday()]
+                        datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
+                        monat_index = datum.month
+                        jahr = datum.year
+                        monat_name = german_months[monat_index]
+                        eintraege.append({
+                            "Nachname": nname,
+                            "Vorname": vname,
+                            "DatumKW": datum_kw,
+                            "Kommentar": kommentar,
+                            "Monat": f"{monat_index:02d}-{jahr}_{monat_name} {jahr}"
+                        })
 
-                if 3 in row and pd.notnull(row[3]):
-                    nachnamen.append(str(row[3]))
-                if 6 in row and pd.notnull(row[6]):
-                    nachnamen.append(str(row[6]))
-                if 4 in row and pd.notnull(row[4]):
-                    vornamen.append(str(row[4]))
-                if 7 in row and pd.notnull(row[7]):
-                    vornamen.append(str(row[7]))
-
-                # Alle Kombinationen erzeugen
-                for nname in nachnamen:
-                    for vname in vornamen:
-                        if (
-                            "krank" in kommentar.lower()
-                            and pd.notnull(nname)
-                            and pd.notnull(vname)
-                            and pd.notnull(datum)
-                            and datum.year >= 2025
-                        ):
-                            kw = datum.isocalendar().week
-                            wochentag = wochentage[datum.weekday()]
-                            datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
-                            monat_index = datum.month
-                            jahr = datum.year
-                            monat_name = german_months[monat_index]
-                            eintraege.append({
-                                "Nachname": nname,
-                                "Vorname": vname,
-                                "DatumKW": datum_kw,
-                                "Kommentar": kommentar,
-                                "Monat": f"{monat_index:02d}-{jahr}_{monat_name} {jahr}"
-                            })
+                # Paar 2: G/H (6/7)
+                if 6 in row and pd.notnull(row[6]) and 7 in row and pd.notnull(row[7]):
+                    nname = str(row[6])
+                    vname = str(row[7])
+                    if (
+                        "krank" in kommentar.lower()
+                        and datum is not None
+                        and datum.year >= 2025
+                    ):
+                        kw = datum.isocalendar().week
+                        wochentag = wochentage[datum.weekday()]
+                        datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
+                        monat_index = datum.month
+                        jahr = datum.year
+                        monat_name = german_months[monat_index]
+                        eintraege.append({
+                            "Nachname": nname,
+                            "Vorname": vname,
+                            "DatumKW": datum_kw,
+                            "Kommentar": kommentar,
+                            "Monat": f"{monat_index:02d}-{jahr}_{monat_name} {jahr}"
+                        })
 
         except Exception as e:
             st.error(f"Fehler in Datei {file.name}: {e}")
