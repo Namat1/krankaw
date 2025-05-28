@@ -30,30 +30,44 @@ if uploaded_files:
 
             for _, row in df.iterrows():
                 kommentar = str(row[15]) if 15 in row and pd.notnull(row[15]) else ""
-                name = row[3] if 3 in row else None
-                vorname = row[4] if 4 in row else None
                 datum = pd.to_datetime(row[14], errors='coerce') if 14 in row else None
 
-                if (
-                    "krank" in kommentar.lower()
-                    and pd.notnull(name)
-                    and pd.notnull(vorname)
-                    and pd.notnull(datum)
-                    and datum.year >= 2025
-                ):
-                    kw = datum.isocalendar().week
-                    wochentag = wochentage[datum.weekday()]
-                    datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
-                    monat_index = datum.month
-                    jahr = datum.year
-                    monat_name = german_months[monat_index]
-                    eintraege.append({
-                        "Nachname": name,
-                        "Vorname": vorname,
-                        "DatumKW": datum_kw,
-                        "Kommentar": kommentar,
-                        "Monat": f"{monat_index:02d}-{jahr}_{monat_name} {jahr}"
-                    })
+                # Nachnamen und Vornamen einsammeln
+                nachnamen = []
+                vornamen = []
+
+                if 3 in row and pd.notnull(row[3]):
+                    nachnamen.append(str(row[3]))
+                if 6 in row and pd.notnull(row[6]):
+                    nachnamen.append(str(row[6]))
+                if 4 in row and pd.notnull(row[4]):
+                    vornamen.append(str(row[4]))
+                if 7 in row and pd.notnull(row[7]):
+                    vornamen.append(str(row[7]))
+
+                # Alle Kombinationen erzeugen
+                for nname in nachnamen:
+                    for vname in vornamen:
+                        if (
+                            "krank" in kommentar.lower()
+                            and pd.notnull(nname)
+                            and pd.notnull(vname)
+                            and pd.notnull(datum)
+                            and datum.year >= 2025
+                        ):
+                            kw = datum.isocalendar().week
+                            wochentag = wochentage[datum.weekday()]
+                            datum_kw = datum.strftime("%d.%m.%Y") + f" (KW {kw}, {wochentag})"
+                            monat_index = datum.month
+                            jahr = datum.year
+                            monat_name = german_months[monat_index]
+                            eintraege.append({
+                                "Nachname": nname,
+                                "Vorname": vname,
+                                "DatumKW": datum_kw,
+                                "Kommentar": kommentar,
+                                "Monat": f"{monat_index:02d}-{jahr}_{monat_name} {jahr}"
+                            })
 
         except Exception as e:
             st.error(f"Fehler in Datei {file.name}: {e}")
@@ -117,7 +131,7 @@ if uploaded_files:
                     col_letter = get_column_letter(col_cells[0].column)
                     sheet.column_dimensions[col_letter].width = int(max_len * 1.2) + 2
 
-            # Übersicht-Tab erzeugen (Layout-Upgrade)
+            # Übersicht-Tab erzeugen
             df_uebersicht = (
                 df_gesamt.groupby(["Nachname", "Vorname"])
                 .size()
@@ -125,7 +139,6 @@ if uploaded_files:
                 .sort_values(by="Anzahl Krank-Meldungen", ascending=False)
             )
 
-            # Zeile für die Überschrift, dann Leerzeile, dann Spaltenüberschriften und Tabelle
             ueberschrift = [["Krank-Meldungen Übersicht ab 2025"], [""], ["Nachname", "Vorname", "Anzahl Krank-Meldungen"]]
             daten = df_uebersicht.values.tolist()
             df_uebersicht_final = pd.DataFrame(ueberschrift + daten, columns=["A", "B", "C"])
@@ -172,7 +185,6 @@ if uploaded_files:
                             cell.alignment = Alignment(horizontal="center", vertical="center")
                         cell.border = thin
 
-            # Spaltenbreite großzügig setzen
             for col in range(1, 4):
                 max_len = 18
                 if col == 3:
